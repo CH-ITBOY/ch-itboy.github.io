@@ -109,10 +109,17 @@
             margin-right: 10px;
         }
 
+        a.api-button {
+        	background-color: #ff2525;
+        }
+
         .api-button:hover {
             background-color: #0056b3;
         }
 
+        a.api-button:hover {
+            background-color: #d40e0e;
+        }
         .pagination {
             display: flex;
             justify-content: center;
@@ -161,6 +168,7 @@
         <div class="button-group">
             <button class="api-button" onclick="dailyUpdate()">每日更新</button>
             <button class="api-button" onclick="getAllShortDramas()">全部短剧</button>
+            <a class="api-button" href="https://ch-itboy.github.io/gzh/" target="_blank">关注公众号</a>
         </div>
         <div class="results" id="results"></div>
         <div class="pagination" id="pagination"></div>
