@@ -18,6 +18,44 @@
             transition: background-color 0.3s;
         }
 
+        /* 样式部分：为每排显示 4 个图标 */
+        #urlContainer {
+            display: flex; /* 启用 flexbox 布局 */
+            flex-wrap: wrap; /* 允许项目换行 */
+            gap: 10px; /* 每个项目之间的间隙 */
+            justify-content: flex-start; /* 靠左对齐 */
+        }
+
+        /* 每个网址项（图标 + 名称） */
+        .url-item {
+            width: calc(25% - 10px); /* 每个图标占 25% 宽度（每行 4 个） */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #fff; /* 背景色 */
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .url-item img {
+            width: 40px; /* 图标的宽度 */
+            height: 40px; /* 图标的高度 */
+            margin-bottom: 5px;
+        }
+
+        .url-item span {
+            font-size: 14px;
+            color: #333;
+            word-wrap: break-word;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+
         .container {
             max-width: 400px;
             margin: 0 auto;
@@ -57,28 +95,6 @@
             display: flex;
             flex-wrap: wrap;
             justify-content: space-between;
-        }
-
-        .url-item {
-            width: 45%;
-            margin-bottom: 20px;
-            text-align: center;
-            cursor: pointer;
-            border-radius: 10px;
-            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
-            background-color: #f9f9f9;
-            transition: transform 0.2s ease-in-out;
-        }
-
-        .url-item img {
-            width: 30px;
-            height: 30px;
-        }
-
-        .url-item span {
-            display: block;
-            margin-top: 5px;
-            font-size: 14px;
         }
 
         .url-item.dragging {
@@ -212,12 +228,15 @@
     </div>
 
     <!-- 添加网址表单 -->
+    <!-- 添加网址表单 -->
     <div class="add-url-form" id="addUrlForm">
         <input type="text" id="urlName" placeholder="网址名称">
         <input type="text" id="urlLink" placeholder="网址链接">
+        <input type="text" id="urlIcon" placeholder="图标链接 (可选)">
         <button onclick="addUrl()">添加</button>
         <button onclick="toggleAddUrlForm()">取消</button>
     </div>
+
     <!-- 背景色选择器 -->
     <div id="colorPicker" class="color-picker"></div>
     <script type="text/javascript">
@@ -225,31 +244,33 @@
         // 默认网址列表
         const defaultUrls = [
             { name: '百度', url: 'https://www.baidu.com' },
-            { name: 'Google', url: 'https://www.google.com' },
-            { name: 'GitHub', url: 'https://www.github.com' },
-            { name: 'StackOverflow', url: 'https://stackoverflow.com' },
             { name: '微博', url: 'https://weibo.com' },
             { name: '知乎', url: 'https://www.zhihu.com' },
             { name: 'Bing', url: 'https://www.bing.com' },
             { name: '淘宝', url: 'https://www.taobao.com' },
             { name: '京东', url: 'https://www.jd.com' },
-            { name: 'Twitter', url: 'https://twitter.com' }
         ];
 
-        // 加载网址
-        function loadUrls() {
+        // 从 localStorage 加载已保存的网址
+        async function loadUrls() {
             const storedUrls = JSON.parse(localStorage.getItem('urls')) || defaultUrls;
+
             const urlContainer = document.getElementById('urlContainer');
             urlContainer.innerHTML = '';  // 清空现有的内容
 
-            storedUrls.forEach(urlData => {
+            for (let urlData of storedUrls) {
+                // 如果没有图标，就进行自动检测
+                if (!urlData.icon) {
+                    urlData.icon = await getWebsiteIcon(urlData.url);  // 自动检测图标
+                }
+
                 const newItem = document.createElement('div');
                 newItem.className = 'url-item';
                 newItem.draggable = true;
                 newItem.setAttribute('data-url', urlData.url);
 
                 const newImage = document.createElement('img');
-                newImage.src = `https://www.google.com/s2/favicons?domain=${urlData.url}`; // 使用Google提供的favicon
+                newImage.src = urlData.icon || 'assets/default-icon.png';  // 如果没有图标则使用默认图标
                 newImage.alt = urlData.name;
 
                 const newSpan = document.createElement('span');
@@ -270,25 +291,57 @@
                 newItem.addEventListener('dragend', handleDragEnd);
 
                 urlContainer.appendChild(newItem);
-            });
+            }
+            saveUrls(storedUrls);
         }
+
+
+
 
         // 保存网址到 localStorage
         function saveUrls(urls) {
+            console.log(urls)
             localStorage.setItem('urls', JSON.stringify(urls));
         }
 
-        // 添加网址
-        function addUrl() {
+        // 获取网站图标，如果没有图标则使用默认图标
+        function getWebsiteIcon(url) {
+            return new Promise((resolve, reject) => {
+                // 创建一个新的 img 元素
+                const img = new Image();
+                
+                // 设置 img 元素的 src 为网站的 favicon.ico
+                img.src = `${url}/favicon.ico`;
+
+                // 图片加载成功时调用
+                img.onload = function() {
+                    resolve(img.src);  // 返回图标的 URL
+                };
+
+                // 图片加载失败时调用
+                img.onerror = function() {
+                    resolve('assets/default-icon.png');  // 如果无法加载，返回默认图标
+                };
+            });
+        }
+
+        // 添加网址并保存图标
+        async function addUrl() {
             const urlName = document.getElementById('urlName').value;
             const urlLink = document.getElementById('urlLink').value;
+            let urlIcon = document.getElementById('urlIcon').value || ''; // 用户自定义的图标链接
 
             if (!urlName || !urlLink) {
                 alert('请输入网址名称和链接');
                 return;
             }
 
-            const newUrlData = { name: urlName, url: urlLink };
+            // 如果用户没有提供图标 URL，则自动获取网站图标
+            if (!urlIcon) {
+                urlIcon = await getWebsiteIcon(urlLink);
+            }
+
+            const newUrlData = { name: urlName, url: urlLink, icon: urlIcon };
             const storedUrls = JSON.parse(localStorage.getItem('urls')) || [];
             storedUrls.push(newUrlData);
             saveUrls(storedUrls);
@@ -297,8 +350,11 @@
             // 清空输入框并关闭表单
             document.getElementById('urlName').value = '';
             document.getElementById('urlLink').value = '';
+            document.getElementById('urlIcon').value = '';
             toggleAddUrlForm();
         }
+
+
 
         // 搜索网址
         function search() {
