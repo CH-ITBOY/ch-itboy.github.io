@@ -99,6 +99,7 @@
 
         .url-item.dragging {
             opacity: 0.5;
+            z-index: 1000;
         }
 
         .add-url-form {
@@ -397,36 +398,98 @@
         // 拖拽事件
         let draggedItem = null;
 
-        function handleDragStart(e) {
-            draggedItem = e.target;
-            draggedItem.classList.add('dragging');
-        }
+        // 处理拖拽放置事件
+        function handleDrop(event) {
+            event.preventDefault(); // 阻止默认行为
 
-        function handleDragOver(e) {
-            e.preventDefault();
-            const afterElement = getDragAfterElement(e.clientY);
-            const container = document.getElementById('urlContainer');
-            if (afterElement == null) {
-                container.appendChild(draggedItem);
-            } else {
-                container.insertBefore(draggedItem, afterElement);
+            // 获取被拖拽的元素
+            const draggedItem = document.querySelector('.dragging');
+            
+            // 获取当前放置位置的目标元素
+            const targetItem = event.target.closest('.url-item');
+
+            // 判断目标元素是否存在，并且不是被拖拽的元素本身
+            if (targetItem && draggedItem !== targetItem) {
+                const draggedIndex = [...targetItem.parentNode.children].indexOf(draggedItem);
+                const targetIndex = [...targetItem.parentNode.children].indexOf(targetItem);
+
+                // 将拖拽元素放置到目标元素的位置
+                if (draggedIndex < targetIndex) {
+                    targetItem.parentNode.insertBefore(draggedItem, targetItem.nextSibling);
+                } else {
+                    targetItem.parentNode.insertBefore(draggedItem, targetItem);
+                }
+
+                // 更新 localStorage 中的网址顺序
+                const storedUrls = JSON.parse(localStorage.getItem('urls')) || [];
+                const movedItemData = storedUrls.splice(draggedIndex, 1)[0]; // 获取被拖拽的网址数据
+                storedUrls.splice(targetIndex, 0, movedItemData); // 在新位置插入
+                localStorage.setItem('urls', JSON.stringify(storedUrls));
             }
         }
 
-        function handleDrop(e) {
-            e.preventDefault();
-            const urls = Array.from(document.querySelectorAll('.url-item'));
-            const sortedUrls = urls.map(item => ({
-                name: item.querySelector('span').textContent,
-                url: item.getAttribute('data-url')
-            }));
-            saveUrls(sortedUrls);
+        function handleDragOver(event) {
+            event.preventDefault(); // 阻止默认行为（比如文本被拖拽）
+        }
+        // 处理拖拽开始事件
+        function handleDragStart(event) {
+            // 判断是鼠标事件还是触摸事件
+            const isTouchEvent = event.type.startsWith('touch');
+            
+            // 获取拖拽元素
+            const draggedItem = isTouchEvent ? event.target.closest('.url-item') : event.target;
+
+            // 获取拖拽元素的位置
+            draggedItem.classList.add('dragging');
+
+            // 如果是触摸事件，存储触摸位置
+            if (isTouchEvent) {
+                draggedItem.setAttribute('data-touch-start', JSON.stringify({
+                    touchStartX: event.touches[0].clientX,
+                    touchStartY: event.touches[0].clientY
+                }));
+            } else {
+                event.dataTransfer.setData('text', draggedItem.dataset.url);
+            }
         }
 
-        function handleDragEnd(e) {
-            draggedItem.classList.remove('dragging');
-            draggedItem = null;
+        // 处理拖拽移动事件
+        function handleDragMove(event) {
+            // 判断是触摸事件
+            const isTouchEvent = event.type.startsWith('touch');
+            
+            if (isTouchEvent) {
+                const draggedItem = document.querySelector('.dragging');
+                const touchStart = JSON.parse(draggedItem.getAttribute('data-touch-start'));
+                const touchEndX = event.touches[0].clientX;
+                const touchEndY = event.touches[0].clientY;
+
+                // 设置拖拽元素的位置
+                draggedItem.style.position = 'absolute';
+                draggedItem.style.left = `${touchEndX - touchStart.touchStartX}px`;
+                draggedItem.style.top = `${touchEndY - touchStart.touchStartY}px`;
+            }
         }
+
+        // 处理拖拽结束事件
+        function handleDragEnd(event) {
+            const draggedItem = event.target.closest('.url-item');
+            draggedItem.classList.remove('dragging');
+            
+            // 还原样式
+            draggedItem.style.position = '';
+            draggedItem.style.left = '';
+            draggedItem.style.top = '';
+        }
+
+        // 监听触摸和鼠标事件
+        document.addEventListener('touchstart', handleDragStart);
+        document.addEventListener('touchmove', handleDragMove);
+        document.addEventListener('touchend', handleDragEnd);
+        document.addEventListener('mousedown', handleDragStart);
+        document.addEventListener('mousemove', handleDragMove);
+        document.addEventListener('mouseup', handleDragEnd);
+
 
         // 获取拖拽的目标元素
         function getDragAfterElement(y) {
