@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网址导航</title>
+    <style type="text/css">
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            padding: 20px;
+            transition: background-color 0.3s;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .search-bar input {
+            width: 70%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .search-bar button {
+            padding: 10px;
+            margin-left: 5px;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 5px;
+        }
+
+        .url-container {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+
+        .url-item {
+            width: 45%;
+            margin-bottom: 20px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 10px;
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+            background-color: #f9f9f9;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .url-item img {
+            width: 30px;
+            height: 30px;
+        }
+
+        .url-item span {
+            display: block;
+            margin-top: 5px;
+            font-size: 14px;
+        }
+
+        .url-item.dragging {
+            opacity: 0.5;
+        }
+
+        .add-url-form {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .add-url-form input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .add-url-form button {
+            width: 48%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 2%;
+        }
+
+        .add-url-form button:last-child {
+            background-color: #F44336;
+        }
+
+        /* 设置按钮 */
+        .settings-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #FF9800;
+            color: white;
+            padding: 15px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 1000;
+        }
+
+        /* 设置菜单 */
+        .settings-menu {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            background-color: #fff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            display: none;
+            flex-direction: column;
+            padding: 10px;
+            z-index: 999;
+        }
+
+        .settings-menu button {
+            padding: 10px;
+            margin: 5px 0;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .settings-menu button:hover {
+            background-color: #45a049;
+        }
+
+        /* 背景色选择器样式 */
+        .color-picker {
+            display: none;
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            background-color: #fff;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 999;
+            flex-wrap: wrap;
+            width: 120px;
+            height: 120px;
+            overflow: auto;
+        }
+
+        .color-picker div {
+            width: 30px;
+            height: 30px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- 标题 -->
+        <div class="header">
+            <h1>网址导航</h1>
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="搜索网址...">
+                <button onclick="search()">搜索</button>
+            </div>
+        </div>
+
+        <!-- 快捷网址展示区 -->
+        <div class="url-container" id="urlContainer">
+            <!-- 动态加载的网址项 -->
+        </div>
+    </div>
+
+    <!-- 设置按钮 -->
+    <div id="settingsButton" class="settings-button">
+        ⚙️
+    </div>
+
+    <!-- 设置菜单 -->
+    <div id="settingsMenu" class="settings-menu">
+        <button onclick="toggleAddUrlForm()">添加网址</button>
+        <button onclick="changeBackground()">设置背景</button>
+    </div>
+
+    <!-- 添加网址表单 -->
+    <div class="add-url-form" id="addUrlForm">
+        <input type="text" id="urlName" placeholder="网址名称">
+        <input type="text" id="urlLink" placeholder="网址链接">
+        <button onclick="addUrl()">添加</button>
+        <button onclick="toggleAddUrlForm()">取消</button>
+    </div>
+    <!-- 背景色选择器 -->
+    <div id="colorPicker" class="color-picker"></div>
+    <script type="text/javascript">
+        // 从 localStorage 加载已保存的网址
+        // 默认网址列表
+        const defaultUrls = [
+            { name: '百度', url: 'https://www.baidu.com' },
+            { name: 'Google', url: 'https://www.google.com' },
+            { name: 'GitHub', url: 'https://www.github.com' },
+            { name: 'StackOverflow', url: 'https://stackoverflow.com' },
+            { name: '微博', url: 'https://weibo.com' },
+            { name: '知乎', url: 'https://www.zhihu.com' },
+            { name: 'Bing', url: 'https://www.bing.com' },
+            { name: '淘宝', url: 'https://www.taobao.com' },
+            { name: '京东', url: 'https://www.jd.com' },
+            { name: 'Twitter', url: 'https://twitter.com' }
+        ];
+
+        // 加载网址
+        function loadUrls() {
+            const storedUrls = JSON.parse(localStorage.getItem('urls')) || defaultUrls;
+            const urlContainer = document.getElementById('urlContainer');
+            urlContainer.innerHTML = '';  // 清空现有的内容
+
+            storedUrls.forEach(urlData => {
+                const newItem = document.createElement('div');
+                newItem.className = 'url-item';
+                newItem.draggable = true;
+                newItem.setAttribute('data-url', urlData.url);
+
+                const newImage = document.createElement('img');
+                newImage.src = `https://www.google.com/s2/favicons?domain=${urlData.url}`; // 使用Google提供的favicon
+                newImage.alt = urlData.name;
+
+                const newSpan = document.createElement('span');
+                newSpan.textContent = urlData.name;
+
+                newItem.appendChild(newImage);
+                newItem.appendChild(newSpan);
+
+                // 设置点击事件打开网址
+                newItem.onclick = function() {
+                    window.location.href = urlData.url;
+                };
+
+                // 拖拽事件
+                newItem.addEventListener('dragstart', handleDragStart);
+                newItem.addEventListener('dragover', handleDragOver);
+                newItem.addEventListener('drop', handleDrop);
+                newItem.addEventListener('dragend', handleDragEnd);
+
+                urlContainer.appendChild(newItem);
+            });
+        }
+
+        // 保存网址到 localStorage
+        function saveUrls(urls) {
+            localStorage.setItem('urls', JSON.stringify(urls));
+        }
+
+        // 添加网址
+        function addUrl() {
+            const urlName = document.getElementById('urlName').value;
+            const urlLink = document.getElementById('urlLink').value;
+
+            if (!urlName || !urlLink) {
+                alert('请输入网址名称和链接');
+                return;
+            }
+
+            const newUrlData = { name: urlName, url: urlLink };
+            const storedUrls = JSON.parse(localStorage.getItem('urls')) || [];
+            storedUrls.push(newUrlData);
+            saveUrls(storedUrls);
+            loadUrls();
+
+            // 清空输入框并关闭表单
+            document.getElementById('urlName').value = '';
+            document.getElementById('urlLink').value = '';
+            toggleAddUrlForm();
+        }
+
+        // 搜索网址
+        function search() {
+            const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            const urlItems = document.getElementsByClassName('url-item');
+
+            for (let i = 0; i < urlItems.length; i++) {
+                const itemName = urlItems[i].textContent.toLowerCase();
+                if (itemName.includes(searchQuery)) {
+                    urlItems[i].style.display = 'block';
+                } else {
+                    urlItems[i].style.display = 'none';
+                }
+            }
+        }
+
+        // 切换显示添加网址表单
+        function toggleAddUrlForm() {
+            const form = document.getElementById('addUrlForm');
+            form.style.display = (form.style.display === 'block') ? 'none' : 'block';
+        }
+
+        // 改变背景颜色
+        function changeBackground() {
+            const color = prompt("请输入背景颜色 (例如: #f4f4f4, #ff9800):", "#f4f4f4");
+            if (color) {
+                document.body.style.backgroundColor = color;
+                localStorage.setItem('backgroundColor', color);
+            }
+        }
+
+        // 加载背景颜色
+        function loadBackgroundColor() {
+            const savedColor = localStorage.getItem('backgroundColor');
+            if (savedColor) {
+                document.body.style.backgroundColor = savedColor;
+            }
+        }
+
+        // 拖拽事件
+        let draggedItem = null;
+
+        function handleDragStart(e) {
+            draggedItem = e.target;
+            draggedItem.classList.add('dragging');
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            const afterElement = getDragAfterElement(e.clientY);
+            const container = document.getElementById('urlContainer');
+            if (afterElement == null) {
+                container.appendChild(draggedItem);
+            } else {
+                container.insertBefore(draggedItem, afterElement);
+            }
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const urls = Array.from(document.querySelectorAll('.url-item'));
+            const sortedUrls = urls.map(item => ({
+                name: item.querySelector('span').textContent,
+                url: item.getAttribute('data-url')
+            }));
+            saveUrls(sortedUrls);
+        }
+
+        function handleDragEnd(e) {
+            draggedItem.classList.remove('dragging');
+            draggedItem = null;
+        }
+
+        // 获取拖拽的目标元素
+        function getDragAfterElement(y) {
+            const urlItems = [...document.querySelectorAll('.url-item:not(.dragging)')];
+            return urlItems.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        // 更改背景色并展示色板
+        function changeBackground() {
+            const colorPicker = document.getElementById('colorPicker');
+            colorPicker.style.display = (colorPicker.style.display === 'block') ? 'none' : 'block';
+        }
+
+        // 选择背景色
+        function selectBackgroundColor(color) {
+            document.body.style.backgroundColor = color;
+            localStorage.setItem('backgroundColor', color);
+            document.getElementById('colorPicker').style.display = 'none';
+        }
+
+        // 加载背景色
+        function loadBackgroundColor() {
+            const savedColor = localStorage.getItem('backgroundColor');
+            if (savedColor) {
+                document.body.style.backgroundColor = savedColor;
+            }
+        }
+
+        // 创建色板
+        function createColorPicker() {
+            const colors = ['#f4f4f4', '#FF9800', '#FF5722', '#4CAF50', '#2196F3', '#9C27B0', '#795548', '#607D8B', '#FFEB3B', '#9E9E9E'];
+            const colorPicker = document.getElementById('colorPicker');
+            
+            colors.forEach(color => {
+                const colorBox = document.createElement('div');
+                colorBox.style.backgroundColor = color;
+                colorBox.onclick = function() {
+                    selectBackgroundColor(color);
+                };
+                colorPicker.appendChild(colorBox);
+            });
+        }
+
+        // 页面加载时创建色板
+        window.onload = function() {
+            loadUrls();
+            loadBackgroundColor();
+            createColorPicker(); // 初始化色板
+        };
+
+        // 设置按钮功能
+        document.getElementById('settingsButton').onclick = function() {
+            const menu = document.getElementById('settingsMenu');
+            menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+        };
+    </script>
+</body>
+</html>
