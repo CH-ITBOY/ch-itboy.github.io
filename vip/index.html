@@ -400,9 +400,7 @@ $("#play").click(function(){
     var url = urlParams.get('url');
     if (url !== null) {
       $('#url').val(url);
-      $(document).ready(function() {
-        $('#player').click();
-      });
+      $('#player').click();
     }
   }
   init();
