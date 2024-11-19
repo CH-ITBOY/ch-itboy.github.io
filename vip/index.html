@@ -392,6 +392,18 @@ $("#play").click(function(){
       $("#apiList").val(ckapi);
     }
     setApi();
+    var urlParams = new URLSearchParams(window.location.search);
+    var api = urlParams.get('api');
+    if (api !== null) {
+      $('#api').val(api);
+    }
+    var url = urlParams.get('url');
+    if (url !== null) {
+      $('#url').val(url);
+      $(document).ready(function() {
+        $('#player').click();
+      });
+    }
   }
   init();
   function setDefault(){
