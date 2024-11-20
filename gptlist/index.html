@@ -84,10 +84,71 @@
     .link-item {
       animation: fadeIn 0.5s ease-in-out;
     }
+
+    /* 弹出层样式 */
+    #popup {
+        display: none; /* 初始隐藏弹出层 */
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 300px;
+        padding: 20px;
+        background-color: #fff;
+        border-radius: 10px;
+        text-align: center;
+    }
+
+    #popup h3 {
+      padding-bottom: 8px;
+    }
+
+    #popup img {
+        width: 100%;
+        height: auto;
+        max-width: 200px;
+        margin-bottom: 20px;
+        border-radius: 10px;
+        border: 1px solid #386300;
+    }
+
+    #popup .close-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        color: #3b3b3b;
+        background-color: #d2d2d2;
+        font-size: 16px;
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+    }
+
+    /* 背景遮罩 */
+    #overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+    }
   </style>
 </head>
 <body>
+  <!-- 背景遮罩 -->
+  <div id="overlay"></div>
 
+  <!-- 弹出层 -->
+  <div id="popup">
+      <button class="close-btn" onclick="closePopup()">×</button>
+      <h3>扫码赞助</h3>
+      <img src="../wxsk/wxsk.jpeg" alt="二维码">
+      <p>10秒后自动关闭</p>
+  </div>
   <div class="container">
     <div id="link-list" class="link-list">
       <!-- 动态加载网址图标 -->
@@ -95,6 +156,23 @@
   </div>
 
   <script>
+    // 打开弹出层
+    function openPopup() {
+        document.getElementById('popup').style.display = 'block';
+        document.getElementById('overlay').style.display = 'block';
+        setTimeout(closePopup, 10000); // 10秒后自动关闭
+    }
+
+    // 关闭弹出层
+    function closePopup() {
+        document.getElementById('popup').style.display = 'none';
+        document.getElementById('overlay').style.display = 'none';
+    }
+
+    // 页面加载时自动打开弹出层
+    window.onload = function() {
+        openPopup();
+    };
     const linkData = [
       { url: 'https://chatgpti.xyz', icon: 'https://chatgpti.xyz/favicon.ico', name: 'chatgpti' },
       { url: 'https://freegpt.tech', icon: 'https://freegpt.tech/favicon.ico', name: 'freegpt' },
